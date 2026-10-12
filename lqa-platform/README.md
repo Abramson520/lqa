@@ -1,7 +1,5 @@
 # LQA 生成工作台
 
-> **测试交付组研发 · 测试版** — 当前版本为测试版，不代表最终交付品质。
-
 ## 项目简介
 
 面向**游戏本地化**的「需求文档 → 测试用例」生成工作台。
@@ -134,36 +132,7 @@ Web 工作台是面向使用者的图形化入口，负责把「上传/粘贴 �
 
 内置机制不含任何业务知识，领域内容全部由使用者在界面创建（详见 `skills/README.md`）。
 
-## 测试
 
-测试覆盖业务逻辑、Web 接口契约、技能库、导出格式、质量三层与白盒探针，目标是在改动后能快速验证核心能力未被破坏。
-
-| 测试文件 | 覆盖范围 |
-|----------|----------|
-| `test_pipeline.py` | 规则生成、质量门禁、导出流水线 |
-| `test_api.py` | FastAPI 接口契约 |
-| `test_skills.py` | 技能库 CRUD 与边界 |
-| `test_export_format.py` | 14 列执行表字段映射 |
-| `test_quality_layer.py` | gap_review / quality_gate / coverage 三层 |
-| `test_whitebox.py` | 白盒探针（坏文件跳过、env 重载、GBK 解码、max_points 等） |
-
-接口/技能测试使用 FastAPI `TestClient`，需已安装 `httpx`。全量回归目标：`87 passed, 0 failed`。
-
-## 快速开始
-
-```powershell
-# 1) 安装依赖（建议在纯 ASCII 路径的 venv 中安装，避免部分 Python 在中文路径下自举失败）
-python -m pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
-
-# 2) 配置 Key（可选，无 Key 可规则生成）
-Copy-Item .env.example .env
-# 编辑 .env 填写 LQA_API_KEY=sk-...
-
-# 3) 启动 Web 工作台
-run.bat
-```
-
-> 注意：启动服务请使用 `python api_server.py` 或直接双击 `run.bat`（不要用 `uvicorn api_server:app`），否则优雅退出接口无法释放端口。
 
 ## 安全边界
 
