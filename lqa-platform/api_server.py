@@ -452,6 +452,7 @@ class SkillIn(BaseModel):
     description: str = ""
     tags: list[str] = Field(default_factory=list)
     skill_key: str = ""
+    fmt: str = "json"  # 落盘格式：json（默认）/ md / yaml（需已安装 PyYAML）
 
 
 class SkillUpdateIn(BaseModel):
@@ -486,6 +487,7 @@ def api_skill_create(payload: SkillIn) -> dict:
             description=payload.description,
             tags=payload.tags,
             skill_key=payload.skill_key,
+            fmt=payload.fmt,
         )
     except FileExistsError as e:
         raise HTTPException(status_code=409, detail=str(e))
