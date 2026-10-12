@@ -237,8 +237,8 @@ def _expected_for(category: str, target_lang: str, point: RequirementPoint, samp
             f"{lang} 下「{detail}」相关标题/按钮/标签文案完整显示，"
             f"无截断/省略号/溢出到相邻控件；价格与按钮不出框"
         ),
-        "LAYOUT": f"{lang} 下「{detail}」界面控件不重叠、不错位，层级与间距正常，关键按钮可点",
-        "FONT": f"{lang} 字符渲染正常，无豆腐块/□/缺字；特殊字符显示正确",
+        "LAYOUT": f"{lang} 下「{detail}」界面控件不重叠、不错位，层级与间距符合设计稿，关键按钮可点",
+        "FONT": f"{lang} 字符渲染完好，无豆腐块/□/缺字；特殊字符显示无误",
         "ENCODING": f"{lang} 下「{detail}」无乱码（???/mojibake/方框），长文本编码正确",
         "TERMINOLOGY": f"{lang} 与术语表一致，「{detail}」同一概念在入口与详情译法相同，无混用",
         "PUNCTUATION": f"{lang} 数字、单位、标点与空格符合该语言规范",

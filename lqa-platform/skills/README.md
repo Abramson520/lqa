@@ -22,7 +22,7 @@
 | Markdown | `.md` | 无：front-matter 写元数据，正文写 `body` |
 | YAML | `.yaml` / `.yml` | 装有 PyYAML 才注册；未安装则该格式被忽略（不引入硬依赖） |
 
-> 界面新建目前固定写 JSON；`.md` / `.yaml` 文件直接放入 `skills/` 目录即可被读取、参与生成与编辑，无需改代码。
+> 界面新建时可任选落盘格式（YAML 需服务端装有 PyYAML，未安装时该选项自动禁用）；`.md` / `.yaml` 文件也可以直接放入 `skills/` 目录使用。编辑已有技能时保持原格式，不会迁移。
 
 ```json
 // skills/season-pass.json

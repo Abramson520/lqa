@@ -6,7 +6,6 @@ from pathlib import Path
 
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, NamedStyle, PatternFill, Side
-from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.datavalidation import DataValidation
 
 OUT = Path(r"C:\Users\zhang\Desktop\SLG本地化需求规格_v1.xlsx")

@@ -17,6 +17,8 @@ const state = {
   analysis: null,
   docText: "",
   fileName: "",
+  skills: [],
+  skillFormats: ["json"],
 };
 
 /* ============================================================
@@ -227,7 +229,7 @@ $("catNone").onclick = () => renderCatChips(state.meta, []);
 
 /* ============================================================
    技能库（领域测试知识包）
-   技能数据来自 /api/skills（落盘 skills/*.json），生成时以 skill_ids 提交。
+   技能数据来自 /api/skills（落盘 skills/，支持 json/md/yaml），生成时以 skill_ids 提交。
    ============================================================ */
 function getSelectedSkillIds() {
   return [...document.querySelectorAll("#skillChips .chip.on")].map((c) => c.dataset.skill);
@@ -268,7 +270,9 @@ function updateSkillHint() {
 async function loadSkills() {
   try {
     const res = await api("/api/skills");
-    state.skills = res ? (await res.json()).skills : [];
+    const data = res ? await res.json() : {};
+    state.skills = data.skills || [];
+    state.skillFormats = data.formats || ["json"];
     renderSkillChips();
     renderSkillList();
   } catch (e) {
@@ -324,6 +328,18 @@ function openSkillEditor(sid) {
   $("skillBody").value = s?.body || "";
   $("skillTags").value = (s?.tags || []).join(", ");
   $("skillBodyCount").textContent = `${($("skillBody").value || "").length} 字`;
+  // 落盘格式：新建时可任选（按后端注册状态启用/禁用选项）；
+  // 编辑时展示当前格式但锁定——后端更新写回原格式、不迁移
+  const fmtSel = $("skillFmt");
+  const fmts = state.skillFormats || ["json"];
+  [...fmtSel.options].forEach((o) => { o.disabled = !fmts.includes(o.value); });
+  if (s) {
+    fmtSel.value = s.fmt && fmts.includes(s.fmt) ? s.fmt : "json";
+    fmtSel.disabled = true;
+  } else {
+    fmtSel.value = "json";
+    fmtSel.disabled = false;
+  }
   $("skillEditor").hidden = false;
   $("skillEditor").scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
@@ -341,8 +357,9 @@ async function saveSkill() {
   if (!name) return toast("技能名称不能为空", "bad");
   if (!body) return toast("知识正文不能为空（该内容会注入 AI 提示词）", "bad");
 
-  const payload = { name, body, description, tags };
   const isNew = !editingSkillId;
+  const payload = { name, body, description, tags };
+  if (isNew) payload.fmt = $("skillFmt").value;
   try {
     const res = editingSkillId
       ? await api(`/api/skills/${encodeURIComponent(editingSkillId)}`, {

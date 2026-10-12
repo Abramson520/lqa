@@ -262,6 +262,7 @@ def _read_one(path: Path) -> dict[str, Any] | None:
         "body": str(data.get("body") or ""),
         "tags": [str(t) for t in (data.get("tags") or []) if str(t).strip()][:MAX_TAGS],
         "updated_at": str(data.get("updated_at") or ""),
+        "fmt": _ext_to_fmt().get(path.suffix.lower(), ""),
     }
 
 

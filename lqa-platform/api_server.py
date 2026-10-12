@@ -465,7 +465,12 @@ class SkillUpdateIn(BaseModel):
 @app.get("/api/skills")
 def api_skills_list() -> dict:
     items = skills_mod.list_skills()
-    return {"skills": items, "count": len(items), "root": str(skills_mod.SKILLS_DIR)}
+    return {
+        "skills": items,
+        "count": len(items),
+        "formats": skills_mod.available_formats(),
+        "root": str(skills_mod.SKILLS_DIR),
+    }
 
 
 @app.get("/api/skills/{sid}")

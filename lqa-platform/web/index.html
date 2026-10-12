@@ -313,6 +313,14 @@
             <span class="field-label">标签（逗号分隔）</span>
             <input type="text" id="skillTags" class="input" placeholder="如：赛季, 商城, P0">
           </label>
+          <label class="field" id="skillFmtField">
+            <span class="field-label">落盘格式</span>
+            <select id="skillFmt" class="input">
+              <option value="json">JSON（默认，git diff 友好）</option>
+              <option value="md">Markdown（front-matter 写元数据 + 正文写检查点）</option>
+              <option value="yaml">YAML（需服务端安装 PyYAML）</option>
+            </select>
+          </label>
           <div class="action-bar">
             <button class="btn primary" id="btnSkillSave">保存技能</button>
             <button class="btn ghost" id="btnSkillCancel" type="button">取消</button>

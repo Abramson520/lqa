@@ -284,6 +284,31 @@ def test_yaml_roundtrip_when_available():
         _cleanup(root, sid)
 
 
+def test_list_skills_reports_source_format():
+    """list_skills 每项须带 fmt 字段（该技能文件的落盘格式），供前端展示。"""
+    root = ROOT / "skills"
+    sid = "tmp-fmt-meta"
+    _cleanup(root, sid)
+    try:
+        skills_mod.create_skill(name="元数据", body="- 检查点", skill_key=sid, fmt="md", root=root)
+        item = next(i for i in skills_mod.list_skills(root=root) if i["id"] == sid)
+        assert item["fmt"] == "md", "落盘为 md 的技能须上报 fmt=md"
+    finally:
+        _cleanup(root, sid)
+
+
+def test_api_skills_list_reports_available_formats():
+    """/api/skills 须携带 formats（当前注册的格式名），前端据此启用/禁用格式选项。"""
+    import api_server
+    from fastapi.testclient import TestClient
+
+    cl = TestClient(api_server.app)
+    fmts = cl.get("/api/skills").json()["formats"]
+    assert "json" in fmts and "md" in fmts, "json/md 必须始终注册"
+    assert ("yaml" in fmts) == ("yaml" in skills_mod.available_formats()), \
+        "API 上报的 formats 必须与注册表一致"
+
+
 if __name__ == "__main__":
     test_md_skill_is_readable()
     test_md_skill_injects_into_prompt()
@@ -296,4 +321,6 @@ if __name__ == "__main__":
     test_broken_md_frontmatter_skipped()
     test_yaml_registration_matches_availability()
     test_yaml_roundtrip_when_available()
+    test_list_skills_reports_source_format()
+    test_api_skills_list_reports_available_formats()
     print("ALL PASS")

@@ -30,7 +30,6 @@ from lqa import generate as gen_mod
 from lqa import llm as llm_mod
 from lqa import skills as sk
 from lqa.analysis import split_requirements
-from lqa.categories import CATEGORIES, resolve_category, category_label
 from lqa.config import Settings, load_env_file, load_settings
 from lqa.exporters import LOC_COLUMNS, cases_to_dataframe, save_output, to_xlsx_bytes
 from lqa.llm import LLMError, build_system_prompt, chat_json, extract_json_payload, load_few_shots

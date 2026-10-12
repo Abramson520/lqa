@@ -118,3 +118,45 @@ def test_generate_returns_quality_layer():
     assert isinstance(result.get("quality_markdown"), str)
     # 规则用例已带 requirement_source，覆盖率应 > 0
     assert cov["coverage_rate"] is not None and cov["coverage_rate"] > 0
+
+
+def _one_case(expected: str) -> list[dict]:
+    return [{
+        "module": "商城", "feature": "礼包标题", "category": "TEXT_OVERFLOW",
+        "priority": "P1", "requirement_source": "R001",
+        "steps": "1.进入「商城」\n2.查看礼包卡片",
+        "expected": expected,
+    }]
+
+
+def _soft_issues(cases: list[dict]) -> list[dict]:
+    return [i for i in run_rule_checks(cases) if "软空话预期" in i["description"]]
+
+
+def test_soft_expected_ignores_quoted_requirement_fragment():
+    """预期引用需求原文（原文含软词）但主体为可观察判定 → 不应误报。"""
+    expected = (
+        "德文下「礼包价格需正确显示」相关标题/按钮/标签文案完整显示，"
+        "无截断/省略号/溢出到相邻控件；价格与按钮不出框"
+    )
+    assert not _soft_issues(_one_case(expected)), "引用原文片段不应触发软预期误报"
+
+
+def test_soft_expected_still_flags_pure_soft():
+    """整条预期即软话 → 必须报。"""
+    assert _soft_issues(_one_case("正确显示")), "纯软预期必须上报"
+
+
+def test_soft_expected_still_flags_short_residue():
+    """剥离软词后仅剩主语、无可观察内容 → 必须报。"""
+    assert _soft_issues(_one_case("文本正常显示")), "残留内容不足仍须上报"
+
+
+def test_rule_expected_templates_free_of_soft_terms():
+    """规则生成侧：全部类别 expected 模板过门禁零软预期 issue。"""
+    from lqa.categories import CATEGORIES
+    from lqa.rules import _expected_for
+    point = RequirementPoint("商城", "测试文案", 1)
+    for cat in CATEGORIES:
+        expected = _expected_for(cat, "德语", point, ("源文案", "目标文案"))
+        assert not _soft_issues(_one_case(expected)), f"模板 {cat} 自带软词：{expected}"

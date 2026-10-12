@@ -81,6 +81,9 @@ _SOFT_EXPECTED_TERMS = [
         "正常,显示正常,表现正常,无异常,符合预期,正常显示,无问题,正确显示",
     ).split(",") if t
 ]
+# 剥离全部软词后，剩余可观察内容少于此字数 → 判定为「整条软预期」。
+# 软词仅是需求原文引用片段/附带出现时，剩余主体判定句远超阈值，不误报。
+_SOFT_RESIDUE_MIN = int(os.getenv("LQA_QG_SOFT_RESIDUE_MIN", "4"))
 _MIN_STEPS = int(os.getenv("LQA_QG_MIN_STEPS", "2"))
 _MAX_VAGUE_STEPS = int(os.getenv("LQA_QG_MAX_VAGUE_STEPS", "0"))  # 0 = 不限制
 
@@ -136,17 +139,21 @@ def rule_vague_steps(cases: list[dict]) -> list[dict]:
 def rule_soft_expected(cases: list[dict]) -> list[dict]:
     if not _SOFT_EXPECTED_TERMS:
         return []
-    pat = re.compile("|".join(re.escape(t) for t in _SOFT_EXPECTED_TERMS), re.I)
+    # 长词优先：避免「正常」先命中导致「正常显示」被拆成残留「显示」而漏判
+    terms = sorted(_SOFT_EXPECTED_TERMS, key=len, reverse=True)
+    pat = re.compile("|".join(re.escape(t) for t in terms), re.I)
+    residue_pat = re.compile(r"[\s，。、；：？！,.;:?!（）()「」『』\[\]【】\"'—\-~/…·]+")
     found: list[dict] = []
     for idx, c in enumerate(cases, 1):
         cid = f"#{idx}"
-        expected = _texts(c.get("expected"))
-        if not expected:
-            continue
-        soft = [e for e in expected if pat.search(e)]
-        if soft:
-            found.append(_issue(cid, dimension="specificity", severity=SEVERITY_MEDIUM,
-                                description=f"软空话预期：{soft[0][:40]} —— 预期须写明可观察结果（数量/状态/提示）"))
+        for e in _texts(c.get("expected")):
+            if not pat.search(e):
+                continue
+            residue = residue_pat.sub("", pat.sub("", e))
+            if len(residue) < _SOFT_RESIDUE_MIN:
+                found.append(_issue(cid, dimension="specificity", severity=SEVERITY_MEDIUM,
+                                    description=f"软空话预期：{e[:40]} —— 预期须写明可观察结果（数量/状态/提示）"))
+                break
     return found
 
 
