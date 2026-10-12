@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LQA 生成工作台</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- ============ 侧边导航 ============ -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">LQ</div>
+      <div class="brand-text">
+        <span class="brand-title">LQA 工作台</span>
+        <span class="brand-sub">本地化测试用例生成</span>
+      </div>
+    </div>
+
+    <nav class="nav" id="nav">
+      <button class="nav-item active" data-view="wizard">
+        <span class="nav-icon">◎</span><span class="nav-label">生成向导</span>
+      </button>
+      <button class="nav-item" data-view="library">
+        <span class="nav-icon">▤</span><span class="nav-label">参考案例</span>
+      </button>
+      <button class="nav-item" data-view="skills">
+        <span class="nav-icon">✦</span><span class="nav-label">技能库</span>
+      </button>
+      <button class="nav-item" data-view="settings">
+        <span class="nav-icon">⚙</span><span class="nav-label">模型配置</span>
+      </button>
+      <button class="nav-item" data-view="help">
+        <span class="nav-icon">?</span><span class="nav-label">说明</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-foot">
+      <div class="mini-stat">
+        <span class="mini-dot" id="engineDot"></span>
+        <span id="engineText">等待生成</span>
+      </div>
+      <div class="theme-switch" title="切换主题">
+        <button class="theme-btn active" data-theme-set="dark">深色</button>
+        <button class="theme-btn" data-theme-set="light">浅色</button>
+      </div>
+      <button type="button" class="btn stop-btn" id="btnStop" title="停止服务并释放端口 8788">⏻ 退出服务</button>
+    </div>
+  </aside>
+
+  <!-- ============ 主区 ============ -->
+  <main class="main">
+
+    <!-- ---------- 生成向导 ---------- -->
+    <section class="view active" id="view-wizard">
+      <header class="page-head">
+        <div>
+          <h1>生成向导</h1>
+          <p class="sub">上传或粘贴需求 → 拆解 → 生成 → 导出 Excel</p>
+        </div>
+        <div class="head-actions">
+          <button class="btn ghost" id="btnReset">重置</button>
+        </div>
+      </header>
+
+      <!-- 步骤条 -->
+      <ol class="stepper" id="stepper">
+        <li class="step done"><span class="step-n">1</span><span>输入需求</span></li>
+        <li class="step"><span class="step-n">2</span><span>生成参数</span></li>
+        <li class="step"><span class="step-n">3</span><span>预览导出</span></li>
+      </ol>
+
+      <div class="grid-2">
+
+        <!-- 左：输入与参数 -->
+        <div class="stack">
+
+          <div class="card">
+            <div class="card-head">
+              <h2>1 · 需求输入</h2>
+            </div>
+            <div class="card-body">
+              <label class="field">
+                <span class="field-label">任务名称</span>
+                <input type="text" id="taskName" class="input" placeholder="例如：德语文案本地化验收" value="本地化需求">
+              </label>
+
+              <div class="dropzone" id="dropzone">
+                <input type="file" id="fileInput" accept=".docx,.xlsx,.md,.txt" hidden>
+                <div class="dropzone-inner">
+                  <div class="dz-icon">⇪</div>
+                  <div class="dz-title">拖拽文件到此处，或<span class="link">点击上传</span></div>
+                  <div class="dz-hint">支持 Word / Excel / Markdown / TXT · 最大 20MB</div>
+                </div>
+                <div class="file-chip" id="fileChip" hidden>
+                  <span class="file-name" id="fileName"></span>
+                  <span class="file-meta" id="fileMeta"></span>
+                  <button class="chip-x" id="fileClear" title="移除">×</button>
+                </div>
+              </div>
+
+              <label class="field">
+                <span class="field-label">或粘贴需求文本</span>
+                <textarea id="pasteText" class="input textarea" rows="8"
+                  placeholder="粘贴策划需求、本地化规范、文案清单…&#10;支持标题/列表自动拆解，例如：&#10;【商城系统】&#10;1. 商店主界面展示限时礼包标题与价格"></textarea>
+                <span class="field-hint" id="pasteHint">0 字符</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <h2>2 · 生成参数</h2>
+            </div>
+            <div class="card-body">
+              <div class="row-2">
+                <label class="field">
+                  <span class="field-label">源语言</span>
+                  <select id="sourceLang" class="input"></select>
+                </label>
+                <label class="field">
+                  <span class="field-label">目标语言</span>
+                  <select id="targetLang" class="input"></select>
+                </label>
+              </div>
+
+              <label class="field">
+                <span class="field-label">用例条数 <b id="countVal">不限</b></span>
+                <input type="number" id="count" min="0" max="2000" value="0" class="input" placeholder="0 = 不限制">
+                <em class="field-hint">留空或填 0 表示不限制，按需求充分生成</em>
+              </label>
+
+              <div class="field">
+                <span class="field-label">
+                  关注类别
+                  <button class="mini-link" id="catCore">核心</button>
+                  <button class="mini-link" id="catAll">全选</button>
+                  <button class="mini-link" id="catNone">清空</button>
+                </span>
+                <div class="chips" id="catChips"></div>
+                <div class="cat-custom">
+                  <input type="text" id="customCat" class="input" placeholder="添加自定义类别，如：未成年人保护" maxlength="40">
+                  <button class="btn tiny" id="btnAddCat" type="button">添加</button>
+                  <em class="field-hint">自定义类别仅本机保存（localStorage）</em>
+                </div>
+              </div>
+
+              <label class="field">
+                <span class="field-label">
+                  领域技能
+                  <button class="mini-link" id="skillGoLib" type="button">管理技能库 →</button>
+                </span>
+                <div class="chips skill-chips" id="skillChips"></div>
+                <em class="field-hint" id="skillHint">未选择技能。仅启用 AI 补强时生效。</em>
+              </label>
+
+              <label class="field">
+                <span class="field-label">补充要求</span>
+                <input type="text" id="extra" class="input" placeholder="如：优先覆盖商店与邮件模块">
+              </label>
+
+              <label class="switch-row">
+                <input type="checkbox" id="useAi">
+                <span class="switch"></span>
+                <span class="switch-text">
+                  <b>启用 AI 补强</b>
+                  <em id="aiHint">需先在「模型配置」填入 API Key</em>
+                </span>
+              </label>
+            </div>
+          </div>
+
+          <div class="action-bar">
+            <button class="btn ghost" id="btnAnalyze">分析需求</button>
+            <button class="btn primary" id="btnGenerate">生成用例</button>
+          </div>
+          <div class="progress-wrap" id="progressWrap" hidden>
+            <div class="progress"><div class="progress-bar" id="progressBar"></div></div>
+            <span class="progress-text" id="progressText">处理中…</span>
+          </div>
+        </div>
+
+        <!-- 右：分析 + 结果 -->
+        <div class="stack">
+
+          <div class="card" id="analysisCard" hidden>
+            <div class="card-head">
+              <h2>需求拆解</h2>
+              <span class="badge soft" id="analysisBadge"></span>
+            </div>
+            <div class="card-body">
+              <div class="mod-row" id="moduleRow"></div>
+              <div class="table-wrap small">
+                <table class="data-table">
+                  <thead><tr><th>#</th><th>模块</th><th>需求点</th></tr></thead>
+                  <tbody id="pointsBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" id="resultCard" hidden>
+            <div class="card-head">
+              <h2>用例预览</h2>
+              <div class="head-tools">
+                <input type="search" id="caseSearch" class="input compact" placeholder="搜索模块/功能点…">
+              </div>
+            </div>
+
+            <div class="metrics" id="metrics"></div>
+
+            <div class="card-body">
+              <div class="table-wrap">
+                <table class="data-table case-table">
+                  <thead>
+                    <tr>
+                      <th class="col-toggle"></th>
+                      <th>编号</th>
+                      <th>模块</th>
+                      <th>功能点</th>
+                      <th>类别</th>
+                      <th>优先级</th>
+                      <th>质量分</th>
+                    </tr>
+                  </thead>
+                  <tbody id="casesBody"></tbody>
+                </table>
+              </div>
+              <div class="empty-hint" id="casesEmpty" hidden>没有匹配的用例</div>
+            </div>
+
+            <div class="card-foot">
+              <div class="gate-box" id="gateBox"></div>
+              <div class="foot-actions">
+                <button class="btn ghost" id="btnSave">保存到 outputs/</button>
+                <button class="btn primary" id="btnDownload">下载 Excel</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="empty-state" id="wizardEmpty">
+            <div class="empty-icon">◎</div>
+            <div class="empty-title">尚未生成用例</div>
+            <div class="empty-desc">填写需求后点击「分析需求」查看拆解，或直接「生成用例」</div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- 参考案例 ---------- -->
+    <section class="view" id="view-library">
+      <header class="page-head">
+        <div>
+          <h1>参考案例库</h1>
+          <p class="sub">放入 case_library/ 的历史 LQA 文件，可作为 few-shot 与人工对照</p>
+        </div>
+        <button class="btn ghost" id="btnReloadLib">刷新</button>
+      </header>
+      <div class="card">
+        <div class="card-body">
+          <div id="libList" class="lib-list"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- 技能库（领域测试知识包） ---------- -->
+    <section class="view" id="view-skills">
+      <header class="page-head">
+        <div>
+          <h1>技能库</h1>
+          <p class="sub">沉淀团队领域测试知识，生成时勾选即可注入 AI 提示词（保存到 skills/）</p>
+        </div>
+        <div class="head-actions">
+          <button class="btn ghost" id="btnReloadSkills">刷新</button>
+          <button class="btn primary" id="btnSkillNew">+ 新建技能</button>
+        </div>
+      </header>
+
+      <div class="card">
+        <div class="card-body">
+          <div id="skillList" class="skill-list"></div>
+        </div>
+      </div>
+
+      <!-- 编辑器 -->
+      <div class="card narrow" id="skillEditor" hidden>
+        <div class="card-head">
+          <h3 id="skillEditorTitle">新建技能</h3>
+          <button class="btn ghost sm" id="skillEditorClose" type="button">关闭</button>
+        </div>
+        <div class="card-body">
+          <label class="field">
+            <span class="field-label">技能名称 <b style="color:var(--bad)">*</b></span>
+            <input type="text" id="skillName" class="input" placeholder="如：赛季通行证测试要点">
+          </label>
+          <label class="field">
+            <span class="field-label">一句话说明</span>
+            <input type="text" id="skillDesc" class="input" placeholder="选填，用于列表展示与模型语境对齐">
+          </label>
+          <label class="field">
+            <span class="field-label">
+              知识正文 <b style="color:var(--bad)">*</b>
+              <em class="field-hint" id="skillBodyCount">0 字</em>
+            </span>
+            <textarea id="skillBody" class="textarea" rows="10"
+              placeholder="写给 AI 看的领域检查要点，每行一条。&#10;例：&#10;- 赛季结算边界：跨月最后一天 23:59 的归属判定&#10;- 奖励领取时效：过期后是否补发&#10;- 跨赛季叠加：未领取的道具是否结转"></textarea>
+          </label>
+          <label class="field">
+            <span class="field-label">标签（逗号分隔）</span>
+            <input type="text" id="skillTags" class="input" placeholder="如：赛季, 商城, P0">
+          </label>
+          <div class="action-bar">
+            <button class="btn primary" id="btnSkillSave">保存技能</button>
+            <button class="btn ghost" id="btnSkillCancel" type="button">取消</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- 模型配置 ---------- -->
+    <section class="view" id="view-settings">
+      <header class="page-head">
+        <div>
+          <h1>模型配置</h1>
+          <p class="sub">支持 DeepSeek / OpenAI / MiMo / 自定义 OpenAI 兼容接口</p>
+        </div>
+      </header>
+
+      <div class="card narrow">
+        <div class="card-body">
+          <div class="row-2">
+            <label class="field">
+              <span class="field-label">Provider</span>
+              <select id="provider" class="input"></select>
+            </label>
+            <label class="field">
+              <span class="field-label">Model</span>
+              <input type="text" id="modelName" class="input" placeholder="留空用默认">
+            </label>
+          </div>
+          <label class="field">
+            <span class="field-label">Base URL</span>
+            <input type="text" id="baseUrl" class="input" placeholder="留空用默认">
+          </label>
+          <label class="field">
+            <span class="field-label">API Key</span>
+            <input type="password" id="apiKey" class="input" placeholder="sk-…（仅本次会话使用，不自动写入磁盘）">
+          </label>
+
+          <label class="switch-row">
+            <input type="checkbox" id="persistKey">
+            <span class="switch"></span>
+            <span class="switch-text">
+              <b>保存到 .env（明文落盘）</b>
+              <em id="envPathHint">勾选后 Key 将以明文写入 .env</em>
+            </span>
+          </label>
+
+          <div class="action-bar">
+            <button class="btn ghost" id="btnTestConn">测试连通性</button>
+            <button class="btn primary" id="btnSaveSettings">保存配置</button>
+          </div>
+          <div class="notice" id="settingsNotice"></div>
+
+          <div class="current-conf" id="currentConf"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- 说明 ---------- -->
+    <section class="view" id="view-help">
+      <header class="page-head">
+        <div>
+          <h1>使用说明</h1>
+          <p class="sub">本地化需求 → 可评审的 LQA 测试用例</p>
+        </div>
+      </header>
+      <div class="card narrow">
+        <div class="card-body prose">
+          <h3>这是什么</h3>
+          <p>本地 <b>LQA 生成工作台</b>：把本地化需求文档/文本，变成可评审的 LQA 测试用例 Excel。
+             规则引擎保证无 Key 也能出可执行骨架，启用 AI 后在此骨架上补强。</p>
+          <h3>主路径</h3>
+          <ol>
+            <li>打开「生成向导」，上传文档或粘贴需求</li>
+            <li>设置源语言 / 目标语言 / 条数 / 关注类别</li>
+            <li>点「分析需求」预览拆解结果</li>
+            <li>点「生成用例」；勾选 AI 补强可获得更具体的步骤与双语文案</li>
+            <li>在预览区核对后下载 Excel 或保存到 <code>outputs/</code></li>
+          </ol>
+          <h3>质量门禁说明</h3>
+          <p>每条用例会计算 0–100 质量分，并对空泛预期、非编号步骤、缺失双语文案等问题列入门禁明细。
+             <b>规则骨架无双语文案时分数存在上限</b>，启用 AI 补强可提升。</p>
+          <h3>LQA 类别</h3>
+          <div id="catTable" class="cat-table"></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- 用例详情抽屉 -->
+<div class="drawer-mask" id="drawerMask" hidden></div>
+<aside class="drawer" id="drawer" hidden>
+  <div class="drawer-head">
+    <div>
+      <span class="badge" id="drawerId"></span>
+      <span class="drawer-title" id="drawerTitle"></span>
+    </div>
+    <button class="chip-x" id="drawerClose">×</button>
+  </div>
+  <div class="drawer-body" id="drawerBody"></div>
+</aside>
+
+<div class="toasts" id="toasts"></div>
+
+<script src="app.js"></script>
+</body>
+</html>

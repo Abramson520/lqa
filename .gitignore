@@ -1,0 +1,12 @@
+﻿__pycache__/
+*.pyc
+.venv/
+.env
+data/
+outputs/
+.pytest_cache/
+.DS_Store
+
+# 本地备份压缩包与 Windows 保留设备名垃圾文件，勿入库
+lqa-platform.zip
+nul
